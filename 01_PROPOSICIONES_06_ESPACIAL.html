@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafío Espacial - Prof. Victor</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            background: #f0f2f5; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px; 
+        }
+        .card { 
+            background: white; 
+            width: 100%; 
+            max-width: 500px; 
+            padding: 30px; 
+            border-radius: 25px; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1); 
+            text-align: center; 
+        }
+        .hidden { display: none !important; }
+        input { 
+            width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #ddd; border-radius: 12px; font-size: 16px; box-sizing: border-box;
+        }
+        button { 
+            padding: 12px 20px; cursor: pointer; border: none; border-radius: 12px; font-weight: bold; font-size: 16px; transition: 0.2s; margin: 5px;
+        }
+        .btn-start { background: #6366f1; color: white; width: 100%; margin-top: 20px; }
+        .btn-v { background: #10b981; color: white; flex: 1; }
+        .btn-f { background: #ef4444; color: white; flex: 1; }
+        .btn-opt { background: #ffffff; color: #333; border: 2px solid #e5e7eb; width: 45%; }
+        .btn-opt:hover { border-color: #6366f1; background: #f5f3ff; }
+        
+        #timerContainer { font-size: 22px; font-weight: 800; color: #374151; margin-bottom: 10px; }
+        .stats-header { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 13px; color: #6b7280; font-weight: 600; }
+        
+        #canvasEspacial {
+            background: #fafafa;
+            border-radius: 15px;
+            margin: 15px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #eee;
+            min-height: 200px;
+            padding: 10px;
+        }
+        .formula-text { font-size: 20px; font-weight: bold; margin: 10px 0; color: #1f2937; }
+        .v-box { background: #ecfdf5; padding: 12px; border-radius: 12px; margin-bottom: 15px; font-size: 15px; color: #065f46; border: 1px solid #a7f3d0; }
+        
+        .report-box { text-align: left; background: #f9fafb; padding: 20px; border-radius: 15px; border: 1px solid #e5e7eb; margin-top: 20px; }
+        .report-item { margin-bottom: 8px; display: flex; justify-content: space-between; }
+        .success-text { color: #10b981; font-weight: bold; }
+        .fail-text { color: #ef4444; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <!-- PANTALLA INICIO -->
+    <div id="pantallaInicio">
+        <div style="font-size: 50px;">📐</div>
+        <h2 style="color: #6366f1; margin-top: 10px;">Desafío Espacial</h2>
+        <p style="color: #6b7280;">Lógica Visual y Representación de Áreas</p>
+        <input type="text" id="inputNombre" placeholder="Nombre del estudiante">
+        <input type="text" id="inputEquipo" placeholder="Equipo o País">
+        <button class="btn-start" onclick="comenzarJuego(1)">INICIAR DESAFÍO 🚀</button>
+    </div>
+
+    <!-- PANTALLA JUEGO -->
+    <div id="pantallaJuego" class="hidden">
+        <div id="timerContainer">⏳ <span id="timerDisplay">02:00</span></div>
+        <div class="stats-header">
+            <span id="displayNombre"></span>
+            <span id="displayNivel" style="background: #e0e7ff; color: #4338ca; padding: 2px 8px; border-radius: 5px;"></span>
+        </div>
+        
+        <div id="canvasEspacial"></div>
+
+        <div id="zonaLogica">
+            <div class="v-box" id="txtPremisa"></div>
+        </div>
+
+        <div class="formula-text" id="areaPregunta"></div>
+        
+        <div id="areaBotones" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;"></div>
+        
+        <div style="margin-top: 20px; font-size: 12px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px;">
+            Progreso: <span id="numPregunta">1</span> / <span id="totalPreg"></span>
+        </div>
+    </div>
+
+    <!-- PANTALLA FINAL -->
+    <div id="pantallaFinal" class="hidden">
+        <h2 id="tituloFinal">Reporte de Desempeño</h2>
+        <div id="scoreDetalle" style="font-size: 45px; font-weight: 900; color: #111827;"></div>
+        
+        <div class="report-box">
+            <div class="report-item"><span>Estudiante:</span> <span id="resNombre" style="font-weight: bold;"></span></div>
+            <div class="report-item"><span>Equipo/País:</span> <span id="resEquipo" style="font-weight: bold;"></span></div>
+            <div class="report-item"><span>Nivel 1 (Percepción):</span> <span id="resNivel1"></span></div>
+            <div class="report-item"><span>Nivel 2 (Abstracción):</span> <span id="resNivel2"></span></div>
+            <div class="report-item" style="border-top: 1px solid #e5e7eb; padding-top: 10px; margin-top: 10px; font-weight: bold;">
+                <span>Estado Final:</span> <span id="resEstado"></span>
+            </div>
+        </div>
+
+        <!-- Contenedor solo para el botón de Nivel 2 si aplica -->
+        <div id="contenedorAccionesFinales"></div>
+    </div>
+</div>
+
+<script>
+    let nivelActual = 1;
+    let preguntaActual = 1;
+    let aciertosN1 = 0, aciertosN2 = 0, aciertosActuales = 0;
+    let respuestaCorrectaTexto = "";
+    let tipoPregunta = ''; 
+    let nombreEst = "", equipoEst = "";
+    let timeLeft = 120, timerInterval = null;
+
+    const COLORES = { r: '#ef4444', a: '#3b82f6', v: '#10b981', y: '#f59e0b' };
+    const NOMBRES_COLORES = { r: 'Rojo', a: 'Azul', v: 'Verde', y: 'Amarillo' };
+
+    function iniciarTemporizador() {
+        clearInterval(timerInterval);
+        timeLeft = 120;
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            const m = Math.floor(timeLeft / 60), s = timeLeft % 60;
+            document.getElementById('timerDisplay').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+            if (timeLeft <= 0) { finalizarJuego(); }
+        }, 1000);
+    }
+
+    function comenzarJuego(nivel) {
+        if (nivel === 1) {
+            nombreEst = document.getElementById('inputNombre').value;
+            equipoEst = document.getElementById('inputEquipo').value;
+            if (!nombreEst || !equipoEst) return alert("Por favor completa los datos solicitados");
+        }
+        nivelActual = nivel;
+        preguntaActual = 1;
+        aciertosActuales = 0;
+        
+        document.getElementById('displayNombre').innerText = nombreEst;
+        document.getElementById('displayNivel').innerText = "Nivel " + nivelActual;
+        document.getElementById('totalPreg').innerText = 10;
+        
+        document.querySelectorAll('.card > div').forEach(d => d.classList.add('hidden'));
+        document.getElementById('pantallaJuego').classList.remove('hidden');
+        
+        iniciarTemporizador();
+        generarPregunta();
+    }
+
+    function generarPregunta() {
+        const canvas = document.getElementById('canvasEspacial');
+        const areaBotones = document.getElementById('areaBotones');
+        const txtPremisa = document.getElementById('txtPremisa');
+        areaBotones.innerHTML = "";
+        canvas.innerHTML = "";
+
+        tipoPregunta = (preguntaActual % 2 !== 0) ? 'espacial_logica' : 'espacial_mate';
+
+        if (tipoPregunta === 'espacial_logica') {
+            document.getElementById('zonaLogica').classList.remove('hidden');
+            const figura1 = { tipo: 'circle', col: ['r','a','v','y'][Math.floor(Math.random()*4)] };
+            const figura2 = { tipo: 'rect', col: ['r','a','v','y'][Math.floor(Math.random()*4)] };
+            
+            canvas.innerHTML = `
+                <svg width="200" height="100">
+                    <circle cx="60" cy="50" r="30" fill="${COLORES[figura1.col]}" />
+                    <rect x="110" y="20" width="60" height="60" fill="${COLORES[figura2.col]}" />
+                </svg>`;
+
+            const colorMeta = ['r','a','v','y'][Math.floor(Math.random()*4)];
+            const pEsVerdad = (figura1.col === colorMeta);
+            const qEsVerdad = (figura2.col === colorMeta);
+            
+            let simbolo, resultado;
+            if (nivelActual === 1) {
+                simbolo = Math.random() < 0.5 ? "∧ (Y)" : "∨ (O)";
+                resultado = (simbolo.includes("∧")) ? (pEsVerdad && qEsVerdad) : (pEsVerdad || qEsVerdad);
+            } else {
+                simbolo = "→ (Entonces)";
+                resultado = (!pEsVerdad || qEsVerdad);
+            }
+
+            txtPremisa.innerHTML = `Analiza:<br><b>p:</b> El círculo es ${NOMBRES_COLORES[colorMeta]}<br><b>q:</b> El cuadrado es ${NOMBRES_COLORES[colorMeta]}`;
+            document.getElementById('areaPregunta').innerText = `¿Es Verdadero: p ${simbolo} q?`;
+            
+            respuestaCorrectaTexto = resultado; 
+            areaBotones.innerHTML = `<button class="btn-v" onclick="verificar(true)">SÍ (V)</button><button class="btn-f" onclick="verificar(false)">NO (F)</button>`;
+
+        } else {
+            document.getElementById('zonaLogica').classList.add('hidden');
+            const filas = nivelActual === 1 ? Math.floor(Math.random()*4)+2 : Math.floor(Math.random()*5)+5;
+            const cols = nivelActual === 1 ? Math.floor(Math.random()*4)+2 : Math.floor(Math.random()*5)+5;
+            
+            respuestaCorrectaTexto = `${filas} x ${cols}`;
+            
+            let gridHtml = `<div style="display: grid; grid-template-columns: repeat(${cols}, 25px); gap: 3px;">`;
+            for(let i=0; i<(filas * cols); i++) {
+                gridHtml += `<div style="width:25px; height:25px; background:#6366f1; border-radius:4px; opacity:0.9;"></div>`;
+            }
+            gridHtml += `</div>`;
+            canvas.innerHTML = gridHtml;
+            
+            document.getElementById('areaPregunta').innerText = `¿Cómo se representa esta cantidad?`;
+            
+            let opts = [respuestaCorrectaTexto];
+            while(opts.length < 4) {
+                let fRandom = Math.floor(Math.random()*8)+2;
+                let cRandom = Math.floor(Math.random()*8)+2;
+                let opc = `${fRandom} x ${cRandom}`;
+                if(!opts.includes(opc)) opts.push(opc);
+            }
+            opts.sort(() => Math.random()-0.5).forEach(o => {
+                areaBotones.innerHTML += `<button class="btn-opt" onclick="verificar('${o}')">${o}</button>`;
+            });
+        }
+    }
+
+    function verificar(res) {
+        if (res === respuestaCorrectaTexto) aciertosActuales++;
+        
+        const total = 10;
+        if (preguntaActual < total) {
+            preguntaActual++;
+            generarPregunta();
+        } else {
+            clearInterval(timerInterval);
+            if (nivelActual === 1) {
+                aciertosN1 = aciertosActuales;
+                if (aciertosN1 >= 6) mostrarPasoNivel();
+                else finalizarJuego();
+            } else {
+                aciertosN2 = aciertosActuales;
+                finalizarJuego();
+            }
+        }
+    }
+
+    function mostrarPasoNivel() {
+        document.getElementById('pantallaJuego').classList.add('hidden');
+        document.getElementById('pantallaFinal').classList.remove('hidden');
+        document.getElementById('tituloFinal').innerText = "¡Nivel 1 Completado! 🌟";
+        document.getElementById('scoreDetalle').innerText = aciertosN1 + " / 10";
+        actualizarUIReporte();
+        document.getElementById('contenedorAccionesFinales').innerHTML = `
+            <button class="btn-start" onclick="comenzarJuego(2)">PASAR A NIVEL 2 ⚡</button>
+        `;
+    }
+
+    function finalizarJuego() {
+        clearInterval(timerInterval);
+        document.getElementById('pantallaJuego').classList.add('hidden');
+        document.getElementById('pantallaFinal').classList.remove('hidden');
+        
+        if(nivelActual === 1) aciertosN1 = aciertosActuales;
+        else aciertosN2 = aciertosActuales;
+
+        // Limpiar botones de acción (no se puede reiniciar ni reintentar nivel 2)
+        document.getElementById('contenedorAccionesFinales').innerHTML = "";
+
+        actualizarUIReporte();
+        const totalAciertos = (nivelActual === 2) ? (aciertosN1 + aciertosN2) : aciertosN1;
+        document.getElementById('scoreDetalle').innerText = totalAciertos + " pts";
+        
+        const aprobado = (nivelActual === 2 && aciertosN2 >= 6) || (nivelActual === 1 && aciertosN1 >= 6);
+        const st = document.getElementById('resEstado');
+        
+        if(aprobado) {
+            document.getElementById('tituloFinal').innerText = nivelActual === 2 ? "¡DESAFÍO COMPLETADO! 🏆" : "NIVEL SUPERADO";
+            st.innerText = "APROBADO ✅"; st.className = "success-text";
+        } else {
+            document.getElementById('tituloFinal').innerText = "EVALUACIÓN FINALIZADA";
+            st.innerText = "NO ALCANZADO ❌"; st.className = "fail-text";
+        }
+    }
+
+    function actualizarUIReporte() {
+        document.getElementById('resNombre').innerText = nombreEst;
+        document.getElementById('resEquipo').innerText = equipoEst;
+        document.getElementById('resNivel1').innerText = aciertosN1 + " / 10";
+        document.getElementById('resNivel2').innerText = nivelActual === 2 ? aciertosN2 + " / 10" : "---";
+    }
+</script>
+</body>
+</html>
